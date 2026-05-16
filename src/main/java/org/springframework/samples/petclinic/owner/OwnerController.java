@@ -84,6 +84,26 @@ class OwnerController {
 
 	private static final String OWNER_NOT_FOUND_MESSAGE_SUFFIX = ". Please ensure the ID is correct.";
 
+	private static final String FLASH_ERROR_KEY = "error";
+
+	private static final String FLASH_MESSAGE_KEY = "message";
+
+	private static final String OWNER_CREATE_ERROR_MESSAGE = "There was an error in creating the owner.";
+
+	private static final String OWNER_UPDATE_ERROR_MESSAGE = "There was an error in updating the owner.";
+
+	private static final String OWNER_CREATED_MESSAGE = "New Owner Created";
+
+	private static final String OWNER_UPDATED_MESSAGE = "Owner Values Updated";
+
+	private static final String OWNER_ID_MISMATCH_MESSAGE = "Owner ID mismatch. Please try again.";
+
+	private static final String OWNER_ID_FIELD = "id";
+
+	private static final String MISMATCH_CODE = "mismatch";
+
+	private static final String OWNER_ID_MISMATCH_VALIDATION_MESSAGE = "The owner ID in the form does not match the URL.";
+
 	private final OwnerRepository owners;
 
 	/**
@@ -149,12 +169,12 @@ class OwnerController {
 	@PostMapping("/owners/new")
 	public String processCreationForm(@Valid Owner owner, BindingResult result, RedirectAttributes redirectAttributes) {
 		if (result.hasErrors()) {
-			redirectAttributes.addFlashAttribute("error", "There was an error in creating the owner.");
+			redirectAttributes.addFlashAttribute(FLASH_ERROR_KEY, OWNER_CREATE_ERROR_MESSAGE);
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 		}
 
 		this.owners.save(owner);
-		redirectAttributes.addFlashAttribute("message", "New Owner Created");
+		redirectAttributes.addFlashAttribute(FLASH_MESSAGE_KEY, OWNER_CREATED_MESSAGE);
 		return REDIRECT_TO_OWNER_PREFIX + owner.getId();
 	}
 
@@ -264,19 +284,19 @@ class OwnerController {
 	public String processUpdateOwnerForm(@Valid Owner owner, BindingResult result, @PathVariable("ownerId") int ownerId,
 			RedirectAttributes redirectAttributes) {
 		if (result.hasErrors()) {
-			redirectAttributes.addFlashAttribute("error", "There was an error in updating the owner.");
+			redirectAttributes.addFlashAttribute(FLASH_ERROR_KEY, OWNER_UPDATE_ERROR_MESSAGE);
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 		}
 
 		if (!Objects.equals(owner.getId(), ownerId)) {
-			result.rejectValue("id", "mismatch", "The owner ID in the form does not match the URL.");
-			redirectAttributes.addFlashAttribute("error", "Owner ID mismatch. Please try again.");
+			result.rejectValue(OWNER_ID_FIELD, MISMATCH_CODE, OWNER_ID_MISMATCH_VALIDATION_MESSAGE);
+			redirectAttributes.addFlashAttribute(FLASH_ERROR_KEY, OWNER_ID_MISMATCH_MESSAGE);
 			return REDIRECT_TO_OWNER_EDIT;
 		}
 
 		owner.setId(ownerId);
 		this.owners.save(owner);
-		redirectAttributes.addFlashAttribute("message", "Owner Values Updated");
+		redirectAttributes.addFlashAttribute(FLASH_MESSAGE_KEY, OWNER_UPDATED_MESSAGE);
 		return REDIRECT_TO_OWNER;
 	}
 
