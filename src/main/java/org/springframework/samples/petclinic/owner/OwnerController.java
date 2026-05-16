@@ -43,8 +43,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * owner-related HTTP endpoints under {@code /owners/**}.
  *
  * <p>
- * This controller forms the primary entry point for the owner-management slice of the
- * application. It coordinates with {@link OwnerRepository} to create, search, update, and
+ * This controller forms the primary entry point for the owner-management slice
+ * of the
+ * application. It coordinates with {@link OwnerRepository} to create, search,
+ * update, and
  * display owners. Responsibilities include:
  * </p>
  * <ul>
@@ -54,9 +56,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * </ul>
  *
  * <p>
- * The {@link #setAllowedFields} binder prevents client-submitted {@code id} values from
- * being bound to any model object, guarding against mass-assignment vulnerabilities. The
- * {@link #findOwner} {@code @ModelAttribute} method pre-loads the correct {@link Owner}
+ * The {@link #setAllowedFields} binder prevents client-submitted {@code id}
+ * values from
+ * being bound to any model object, guarding against mass-assignment
+ * vulnerabilities. The
+ * {@link #findOwner} {@code @ModelAttribute} method pre-loads the correct
+ * {@link Owner}
  * instance before every handler that declares an {@code ownerId} path variable.
  * </p>
  *
@@ -84,10 +89,31 @@ class OwnerController {
 
 	private static final String OWNER_NOT_FOUND_MESSAGE_SUFFIX = ". Please ensure the ID is correct.";
 
+	private static final String FLASH_ERROR_KEY = "error";
+
+	private static final String FLASH_MESSAGE_KEY = "message";
+
+	private static final String OWNER_CREATE_ERROR_MESSAGE = "There was an error in creating the owner.";
+
+	private static final String OWNER_UPDATE_ERROR_MESSAGE = "There was an error in updating the owner.";
+
+	private static final String OWNER_CREATED_MESSAGE = "New Owner Created";
+
+	private static final String OWNER_UPDATED_MESSAGE = "Owner Values Updated";
+
+	private static final String OWNER_ID_MISMATCH_MESSAGE = "Owner ID mismatch. Please try again.";
+
+	private static final String OWNER_ID_FIELD = "id";
+
+	private static final String MISMATCH_CODE = "mismatch";
+
+	private static final String OWNER_ID_MISMATCH_VALIDATION_MESSAGE = "The owner ID in the form does not match the URL.";
+
 	private final OwnerRepository owners;
 
 	/**
 	 * Creates a new {@code OwnerController} backed by the given repository.
+	 * 
 	 * @param owners the repository used to load and persist owners
 	 */
 	public OwnerController(OwnerRepository owners) {
@@ -95,8 +121,10 @@ class OwnerController {
 	}
 
 	/**
-	 * Prevents client-supplied {@code id} values from being bound to any model object,
+	 * Prevents client-supplied {@code id} values from being bound to any model
+	 * object,
 	 * guarding against mass-assignment attacks.
+	 * 
 	 * @param dataBinder the data binder to configure
 	 */
 	@InitBinder
@@ -108,11 +136,14 @@ class OwnerController {
 	 * Resolves the {@link Owner} model attribute before each handler method runs.
 	 *
 	 * <p>
-	 * Returns a new, empty {@link Owner} when no {@code ownerId} path variable is present
-	 * (the creation flow). When {@code ownerId} is provided (the edit or detail flow),
+	 * Returns a new, empty {@link Owner} when no {@code ownerId} path variable is
+	 * present
+	 * (the creation flow). When {@code ownerId} is provided (the edit or detail
+	 * flow),
 	 * the owner is loaded from the database; an {@link IllegalArgumentException} is
 	 * thrown if no matching record exists.
 	 * </p>
+	 * 
 	 * @param ownerId the owner's database id, or {@code null} on the creation flow
 	 * @return an existing {@link Owner} or a fresh instance
 	 * @throws IllegalArgumentException if {@code ownerId} is non-null but not found
@@ -121,12 +152,13 @@ class OwnerController {
 	public Owner findOwner(@PathVariable(name = "ownerId", required = false) Integer ownerId) {
 		return ownerId == null ? new Owner()
 				: this.owners.findById(ownerId)
-					.orElseThrow(() -> new IllegalArgumentException(
-							OWNER_NOT_FOUND_MESSAGE_PREFIX + ownerId + OWNER_NOT_FOUND_MESSAGE_SUFFIX));
+						.orElseThrow(() -> new IllegalArgumentException(
+								OWNER_NOT_FOUND_MESSAGE_PREFIX + ownerId + OWNER_NOT_FOUND_MESSAGE_SUFFIX));
 	}
 
 	/**
 	 * Renders the blank owner creation form.
+	 * 
 	 * @return view name for the create/update form
 	 */
 	@GetMapping("/owners/new")
@@ -141,25 +173,28 @@ class OwnerController {
 	 * Returns the form view on validation errors so the user can correct them. On
 	 * success, persists the owner and redirects to their detail page.
 	 * </p>
-	 * @param owner the form-bound owner to create; validated by Bean Validation
-	 * @param result binding and validation errors
+	 * 
+	 * @param owner              the form-bound owner to create; validated by Bean
+	 *                           Validation
+	 * @param result             binding and validation errors
 	 * @param redirectAttributes flash attributes for the redirect response
 	 * @return redirect to the new owner's detail page, or the form view on error
 	 */
 	@PostMapping("/owners/new")
 	public String processCreationForm(@Valid Owner owner, BindingResult result, RedirectAttributes redirectAttributes) {
 		if (result.hasErrors()) {
-			redirectAttributes.addFlashAttribute("error", "There was an error in creating the owner.");
+			redirectAttributes.addFlashAttribute(FLASH_ERROR_KEY, OWNER_CREATE_ERROR_MESSAGE);
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 		}
 
 		this.owners.save(owner);
-		redirectAttributes.addFlashAttribute("message", "New Owner Created");
+		redirectAttributes.addFlashAttribute(FLASH_MESSAGE_KEY, OWNER_CREATED_MESSAGE);
 		return REDIRECT_TO_OWNER_PREFIX + owner.getId();
 	}
 
 	/**
 	 * Renders the owner search form.
+	 * 
 	 * @return view name for the find-owners page
 	 */
 	@GetMapping("/owners/find")
@@ -171,16 +206,21 @@ class OwnerController {
 	 * Searches owners by last name and renders paginated results.
 	 *
 	 * <p>
-	 * A missing or empty {@code lastName} is treated as a wildcard, returning all owners.
-	 * If exactly one match is found, the user is redirected directly to that owner's
-	 * detail page. If no matches are found, a field error is added and the search form is
+	 * A missing or empty {@code lastName} is treated as a wildcard, returning all
+	 * owners.
+	 * If exactly one match is found, the user is redirected directly to that
+	 * owner's
+	 * detail page. If no matches are found, a field error is added and the search
+	 * form is
 	 * re-rendered.
 	 * </p>
-	 * @param page the 1-based page number; defaults to {@code 1}
-	 * @param owner binds the {@code lastName} search parameter from the request
+	 * 
+	 * @param page   the 1-based page number; defaults to {@code 1}
+	 * @param owner  binds the {@code lastName} search parameter from the request
 	 * @param result binding errors from the owner form binding
-	 * @param model the Spring MVC model for passing data to the view
-	 * @return redirect to a single owner's detail page, or the owners list / search form
+	 * @param model  the Spring MVC model for passing data to the view
+	 * @return redirect to a single owner's detail page, or the owners list / search
+	 *         form
 	 */
 	@GetMapping("/owners")
 	public String processFindForm(@RequestParam(defaultValue = "1") int page, Owner owner, BindingResult result,
@@ -211,8 +251,9 @@ class OwnerController {
 
 	/**
 	 * Populates the model with pagination metadata and the current page of owners.
-	 * @param page the current 1-based page number
-	 * @param model the Spring MVC model
+	 * 
+	 * @param page      the current 1-based page number
+	 * @param model     the Spring MVC model
 	 * @param paginated the paginated query result
 	 * @return view name for the owners list page
 	 */
@@ -226,9 +267,11 @@ class OwnerController {
 	}
 
 	/**
-	 * Queries the repository for owners whose last name starts with {@code lastname},
+	 * Queries the repository for owners whose last name starts with
+	 * {@code lastname},
 	 * returning one fixed-size page of results.
-	 * @param page the 1-based page number
+	 * 
+	 * @param page     the 1-based page number
 	 * @param lastname the last-name prefix to search for
 	 * @return one page of matching {@link Owner} records
 	 */
@@ -240,6 +283,7 @@ class OwnerController {
 
 	/**
 	 * Renders the owner edit form for an existing owner.
+	 * 
 	 * @return view name for the create/update form
 	 */
 	@GetMapping("/owners/{ownerId}/edit")
@@ -251,12 +295,16 @@ class OwnerController {
 	 * Validates and persists updates to an existing owner.
 	 *
 	 * <p>
-	 * Guards against a mismatch between the {@code ownerId} path variable and the id
-	 * embedded in the submitted form before saving. Returns the form view on any error.
+	 * Guards against a mismatch between the {@code ownerId} path variable and the
+	 * id
+	 * embedded in the submitted form before saving. Returns the form view on any
+	 * error.
 	 * </p>
-	 * @param owner the form-bound owner with updated values; validated by Bean Validation
-	 * @param result binding and validation errors
-	 * @param ownerId the owner id from the URL path variable
+	 * 
+	 * @param owner              the form-bound owner with updated values; validated
+	 *                           by Bean Validation
+	 * @param result             binding and validation errors
+	 * @param ownerId            the owner id from the URL path variable
 	 * @param redirectAttributes flash attributes for the redirect response
 	 * @return redirect to the owner's detail page, or the form view on error
 	 */
@@ -264,27 +312,30 @@ class OwnerController {
 	public String processUpdateOwnerForm(@Valid Owner owner, BindingResult result, @PathVariable("ownerId") int ownerId,
 			RedirectAttributes redirectAttributes) {
 		if (result.hasErrors()) {
-			redirectAttributes.addFlashAttribute("error", "There was an error in updating the owner.");
+			redirectAttributes.addFlashAttribute(FLASH_ERROR_KEY, OWNER_UPDATE_ERROR_MESSAGE);
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 		}
 
 		if (!Objects.equals(owner.getId(), ownerId)) {
-			result.rejectValue("id", "mismatch", "The owner ID in the form does not match the URL.");
-			redirectAttributes.addFlashAttribute("error", "Owner ID mismatch. Please try again.");
+			result.rejectValue(OWNER_ID_FIELD, MISMATCH_CODE, OWNER_ID_MISMATCH_VALIDATION_MESSAGE);
+			redirectAttributes.addFlashAttribute(FLASH_ERROR_KEY, OWNER_ID_MISMATCH_MESSAGE);
 			return REDIRECT_TO_OWNER_EDIT;
 		}
 
 		owner.setId(ownerId);
 		this.owners.save(owner);
-		redirectAttributes.addFlashAttribute("message", "Owner Values Updated");
+		redirectAttributes.addFlashAttribute(FLASH_MESSAGE_KEY, OWNER_UPDATED_MESSAGE);
 		return REDIRECT_TO_OWNER;
 	}
 
 	/**
-	 * Loads and displays the detail page for a single owner, including their pets and
+	 * Loads and displays the detail page for a single owner, including their pets
+	 * and
 	 * visits.
+	 * 
 	 * @param ownerId the ID of the owner to display
-	 * @return a {@link ModelAndView} containing the owner object and the detail view name
+	 * @return a {@link ModelAndView} containing the owner object and the detail
+	 *         view name
 	 * @throws IllegalArgumentException if no owner with {@code ownerId} exists
 	 */
 	@GetMapping("/owners/{ownerId}")
