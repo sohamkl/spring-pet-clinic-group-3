@@ -73,6 +73,10 @@ class PetController {
 	/** View name for the pet creation and update form. */
 	private static final String VIEWS_PETS_CREATE_OR_UPDATE_FORM = "pets/createOrUpdatePetForm";
 
+	private static final String REDIRECT_TO_OWNER = "redirect:/owners/{ownerId}";
+
+	private static final String DUPLICATE_PET_MESSAGE = "already exists";
+
 	private final OwnerRepository owners;
 
 	private final PetTypeRepository types;
@@ -106,10 +110,7 @@ class PetController {
 	 */
 	@ModelAttribute("owner")
 	public Owner findOwner(@PathVariable("ownerId") int ownerId) {
-		Optional<Owner> optionalOwner = this.owners.findById(ownerId);
-		Owner owner = optionalOwner.orElseThrow(() -> new IllegalArgumentException(
-				"Owner not found with id: " + ownerId + ". Please ensure the ID is correct "));
-		return owner;
+		return findRequiredOwner(ownerId);
 	}
 
 	/**
@@ -133,10 +134,14 @@ class PetController {
 			return new Pet();
 		}
 
-		Optional<Owner> optionalOwner = this.owners.findById(ownerId);
-		Owner owner = optionalOwner.orElseThrow(() -> new IllegalArgumentException(
-				"Owner not found with id: " + ownerId + ". Please ensure the ID is correct "));
+		Owner owner = findRequiredOwner(ownerId);
 		return owner.getPet(petId);
+	}
+
+	private Owner findRequiredOwner(int ownerId) {
+		Optional<Owner> optionalOwner = this.owners.findById(ownerId);
+		return optionalOwner.orElseThrow(() -> new IllegalArgumentException(
+				"Owner not found with id: " + ownerId + ". Please ensure the ID is correct "));
 	}
 
 	/**
@@ -164,7 +169,6 @@ class PetController {
 	 * Renders the blank pet creation form, adding a transient {@link Pet} to the owner
 	 * for form binding.
 	 * @param owner the owner to whom the new pet will belong
-	 * @param model the model map (provided by Spring MVC)
 	 * @return view name for the create/update pet form
 	 */
 	@GetMapping("/pets/new")
@@ -193,13 +197,10 @@ class PetController {
 			RedirectAttributes redirectAttributes) {
 
 		if (StringUtils.hasText(pet.getName()) && pet.isNew() && owner.getPet(pet.getName(), true) != null) {
-			result.rejectValue("name", "duplicate", "already exists");
+			result.rejectValue("name", "duplicate", DUPLICATE_PET_MESSAGE);
 		}
 
-		LocalDate currentDate = LocalDate.now();
-		if (pet.getBirthDate() != null && pet.getBirthDate().isAfter(currentDate)) {
-			result.rejectValue("birthDate", "typeMismatch.birthDate");
-		}
+		rejectFutureBirthDate(pet, result);
 
 		if (result.hasErrors()) {
 			return VIEWS_PETS_CREATE_OR_UPDATE_FORM;
@@ -208,7 +209,7 @@ class PetController {
 		owner.addPet(pet);
 		this.owners.save(owner);
 		redirectAttributes.addFlashAttribute("message", "New Pet has been Added");
-		return "redirect:/owners/{ownerId}";
+		return REDIRECT_TO_OWNER;
 	}
 
 	/**
@@ -242,17 +243,12 @@ class PetController {
 		String petName = pet.getName();
 
 		// checking if the pet name already exists for the owner
-		if (StringUtils.hasText(petName)) {
-			Pet existingPet = owner.getPet(petName, false);
-			if (existingPet != null && !Objects.equals(existingPet.getId(), pet.getId())) {
-				result.rejectValue("name", "duplicate", "already exists");
-			}
+		Pet existingPet = owner.getPet(petName, false);
+		if (StringUtils.hasText(petName) && existingPet != null && !Objects.equals(existingPet.getId(), pet.getId())) {
+			result.rejectValue("name", "duplicate", DUPLICATE_PET_MESSAGE);
 		}
 
-		LocalDate currentDate = LocalDate.now();
-		if (pet.getBirthDate() != null && pet.getBirthDate().isAfter(currentDate)) {
-			result.rejectValue("birthDate", "typeMismatch.birthDate");
-		}
+		rejectFutureBirthDate(pet, result);
 
 		if (result.hasErrors()) {
 			return VIEWS_PETS_CREATE_OR_UPDATE_FORM;
@@ -260,7 +256,7 @@ class PetController {
 
 		updatePetDetails(owner, pet);
 		redirectAttributes.addFlashAttribute("message", "Pet details has been edited");
-		return "redirect:/owners/{ownerId}";
+		return REDIRECT_TO_OWNER;
 	}
 
 	/**
@@ -284,6 +280,13 @@ class PetController {
 			owner.addPet(pet);
 		}
 		this.owners.save(owner);
+	}
+
+	private void rejectFutureBirthDate(Pet pet, BindingResult result) {
+		LocalDate currentDate = LocalDate.now();
+		if (pet.getBirthDate() != null && pet.getBirthDate().isAfter(currentDate)) {
+			result.rejectValue("birthDate", "typeMismatch.birthDate");
+		}
 	}
 
 }

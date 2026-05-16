@@ -74,6 +74,16 @@ class OwnerController {
 	/** View name for the owner creation and update form. */
 	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
 
+	private static final String REDIRECT_TO_OWNER_PREFIX = "redirect:/owners/";
+
+	private static final String REDIRECT_TO_OWNER = "redirect:/owners/{ownerId}";
+
+	private static final String REDIRECT_TO_OWNER_EDIT = "redirect:/owners/{ownerId}/edit";
+
+	private static final String OWNER_NOT_FOUND_MESSAGE_PREFIX = "Owner not found with id: ";
+
+	private static final String OWNER_NOT_FOUND_MESSAGE_SUFFIX = ". Please ensure the ID is correct.";
+
 	private final OwnerRepository owners;
 
 	/**
@@ -111,8 +121,8 @@ class OwnerController {
 	public Owner findOwner(@PathVariable(name = "ownerId", required = false) Integer ownerId) {
 		return ownerId == null ? new Owner()
 				: this.owners.findById(ownerId)
-					.orElseThrow(() -> new IllegalArgumentException("Owner not found with id: " + ownerId
-							+ ". Please ensure the ID is correct " + "and the owner exists in the database."));
+					.orElseThrow(() -> new IllegalArgumentException(
+							OWNER_NOT_FOUND_MESSAGE_PREFIX + ownerId + OWNER_NOT_FOUND_MESSAGE_SUFFIX));
 	}
 
 	/**
@@ -145,7 +155,7 @@ class OwnerController {
 
 		this.owners.save(owner);
 		redirectAttributes.addFlashAttribute("message", "New Owner Created");
-		return "redirect:/owners/" + owner.getId();
+		return REDIRECT_TO_OWNER_PREFIX + owner.getId();
 	}
 
 	/**
@@ -192,7 +202,7 @@ class OwnerController {
 		if (ownersResults.getTotalElements() == 1) {
 			// 1 owner found
 			owner = ownersResults.iterator().next();
-			return "redirect:/owners/" + owner.getId();
+			return REDIRECT_TO_OWNER_PREFIX + owner.getId();
 		}
 
 		// multiple owners found
@@ -261,13 +271,13 @@ class OwnerController {
 		if (!Objects.equals(owner.getId(), ownerId)) {
 			result.rejectValue("id", "mismatch", "The owner ID in the form does not match the URL.");
 			redirectAttributes.addFlashAttribute("error", "Owner ID mismatch. Please try again.");
-			return "redirect:/owners/{ownerId}/edit";
+			return REDIRECT_TO_OWNER_EDIT;
 		}
 
 		owner.setId(ownerId);
 		this.owners.save(owner);
 		redirectAttributes.addFlashAttribute("message", "Owner Values Updated");
-		return "redirect:/owners/{ownerId}";
+		return REDIRECT_TO_OWNER;
 	}
 
 	/**
@@ -282,7 +292,7 @@ class OwnerController {
 		ModelAndView mav = new ModelAndView("owners/ownerDetails");
 		Optional<Owner> optionalOwner = this.owners.findById(ownerId);
 		Owner owner = optionalOwner.orElseThrow(() -> new IllegalArgumentException(
-				"Owner not found with id: " + ownerId + ". Please ensure the ID is correct "));
+				OWNER_NOT_FOUND_MESSAGE_PREFIX + ownerId + OWNER_NOT_FOUND_MESSAGE_SUFFIX));
 		mav.addObject(owner);
 		return mav;
 	}
