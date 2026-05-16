@@ -36,15 +36,15 @@
 **Sonar / rules (examples):** cognitive complexity, nested branches, collapsible `if`, etc.  
 **PR:** *[link / branch name]*
 
-Refactored `Owner` and `PetController` methods to reduce conditional nesting and remove duplicated controller logic.
+Refactored `Owner`, `OwnerController`, and `PetController` methods to reduce conditional nesting and remove duplicated controller logic/literals.
 
 
 | Item                      | Notes                                                                      |
 | ------------------------- | -------------------------------------------------------------------------- |
-| **Refactored files**      | `src/main/java/org/springframework/samples/petclinic/owner/Owner.java`, `src/main/java/org/springframework/samples/petclinic/owner/PetController.java` |
-| **Issue**                 | Sonar-style maintainability issues: collapsible nested `if` conditions and duplicated owner lookup / validation logic in controller flows. |
+| **Refactored files**      | `src/main/java/org/springframework/samples/petclinic/owner/Owner.java`, `src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java`, `src/main/java/org/springframework/samples/petclinic/owner/PetController.java` |
+| **Issue**                 | Sonar-style maintainability issues: collapsible nested `if` conditions, duplicated owner lookup/validation logic, and repeated hard-coded redirect/error literals in controller flows. |
 | **Sustainability impact** | Harder to change, higher defect risk, slower onboarding.                   |
-| **Change**                | Consolidated conditional checks in `Owner#getPet` overloads; extracted shared owner lookup in `PetController` (`findRequiredOwner`); merged nested name-duplicate check in `processUpdateForm`; extracted repeated future birth-date validation into a helper method reused by create/update paths. |
+| **Change**                | Consolidated conditional checks in `Owner#getPet` overloads; extracted shared owner lookup in `PetController` (`findRequiredOwner`); merged nested name-duplicate check in `processUpdateForm`; extracted repeated future birth-date validation into a helper method reused by create/update paths; extracted repeated redirect paths and duplicated error-message literals into top-level controller constants. |
 | **Evidence**              | Appendix fig. *[n]*; PR checks green.                                      |
 
 
@@ -140,6 +140,7 @@ Refactored `Owner` and `PetController` methods to reduce conditional nesting and
 | 2026-05-16 | Reduce complexity | #…  | `src/main/java/org/springframework/samples/petclinic/owner/Owner.java`                     | Refactor Owner class methods for improved readability by consolidating conditional checks in getPet methods. |
 | 2026-05-16 | Reduce complexity | #…  | `src/main/java/org/springframework/samples/petclinic/owner/PetController.java`             | Extract helper method for owner lookup and reuse it in `findOwner` and `findPet` to remove duplicated logic. |
 | 2026-05-16 | Reduce complexity | #…  | `src/main/java/org/springframework/samples/petclinic/owner/PetController.java`             | Merge nested conditional in `processUpdateForm` and extract shared birth-date validation helper for create/update flows. |
+| 2026-05-16 | Reduce complexity | #…  | `src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java`, `src/main/java/org/springframework/samples/petclinic/owner/PetController.java` | Extract repeated redirect/error literals into controller constants to reduce duplication and improve maintainability. |
 | YYYY-MM-DD | Imports         | #…  | `src/test/java/.../OwnerControllerTests.java`, `src/test/java/.../VetControllerTests.java` | e.g. explicit `MockMvcResultMatchers` imports     |
 | YYYY-MM-DD | SQL / Sonar SQL | #…  | `src/main/resources/db/postgres/data.sql`                                                  | e.g. `SELECT 1` in `NOT EXISTS` (SelectStarCheck) |
 |            |                 |     |                                                                                            |                                                   |

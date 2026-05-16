@@ -73,6 +73,10 @@ class PetController {
 	/** View name for the pet creation and update form. */
 	private static final String VIEWS_PETS_CREATE_OR_UPDATE_FORM = "pets/createOrUpdatePetForm";
 
+	private static final String REDIRECT_TO_OWNER = "redirect:/owners/{ownerId}";
+
+	private static final String DUPLICATE_PET_MESSAGE = "already exists";
+
 	private final OwnerRepository owners;
 
 	private final PetTypeRepository types;
@@ -193,7 +197,7 @@ class PetController {
 			RedirectAttributes redirectAttributes) {
 
 		if (StringUtils.hasText(pet.getName()) && pet.isNew() && owner.getPet(pet.getName(), true) != null) {
-			result.rejectValue("name", "duplicate", "already exists");
+			result.rejectValue("name", "duplicate", DUPLICATE_PET_MESSAGE);
 		}
 
 		rejectFutureBirthDate(pet, result);
@@ -205,7 +209,7 @@ class PetController {
 		owner.addPet(pet);
 		this.owners.save(owner);
 		redirectAttributes.addFlashAttribute("message", "New Pet has been Added");
-		return "redirect:/owners/{ownerId}";
+		return REDIRECT_TO_OWNER;
 	}
 
 	/**
@@ -241,7 +245,7 @@ class PetController {
 		// checking if the pet name already exists for the owner
 		Pet existingPet = owner.getPet(petName, false);
 		if (StringUtils.hasText(petName) && existingPet != null && !Objects.equals(existingPet.getId(), pet.getId())) {
-			result.rejectValue("name", "duplicate", "already exists");
+			result.rejectValue("name", "duplicate", DUPLICATE_PET_MESSAGE);
 		}
 
 		rejectFutureBirthDate(pet, result);
@@ -252,7 +256,7 @@ class PetController {
 
 		updatePetDetails(owner, pet);
 		redirectAttributes.addFlashAttribute("message", "Pet details has been edited");
-		return "redirect:/owners/{ownerId}";
+		return REDIRECT_TO_OWNER;
 	}
 
 	/**
