@@ -41,12 +41,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * pet-related HTTP endpoints under {@code /owners/{ownerId}/pets}.
  *
  * <p>
- * This controller coordinates the pet creation and editing flows on behalf of a
- * specific
- * owner. It interacts with both {@link OwnerRepository} (to load and persist
- * the owner
- * aggregate, which cascades to pets) and {@link PetTypeRepository} (to populate
- * the pet
+ * This controller coordinates the pet creation and editing flows on behalf of a specific
+ * owner. It interacts with both {@link OwnerRepository} (to load and persist the owner
+ * aggregate, which cascades to pets) and {@link PetTypeRepository} (to populate the pet
  * type dropdown). Responsibilities include:
  * </p>
  * <ul>
@@ -56,10 +53,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * </ul>
  *
  * <p>
- * {@link PetValidator} is registered via {@link #initPetBinder} and runs
- * automatically
- * before every pet form submission. Both owner and pet binders block
- * client-submitted
+ * {@link PetValidator} is registered via {@link #initPetBinder} and runs automatically
+ * before every pet form submission. Both owner and pet binders block client-submitted
  * {@code id} values to prevent mass-assignment.
  * </p>
  *
@@ -84,11 +79,9 @@ class PetController {
 
 	/**
 	 * Creates a new {@code PetController} backed by the given repositories.
-	 * 
-	 * @param owners the repository used to load and persist owners (and their pets
-	 *               via
-	 *               cascade)
-	 * @param types  the repository used to populate the pet-type dropdown
+	 * @param owners the repository used to load and persist owners (and their pets via
+	 * cascade)
+	 * @param types the repository used to populate the pet-type dropdown
 	 */
 	public PetController(OwnerRepository owners, PetTypeRepository types) {
 		this.owners = owners;
@@ -96,10 +89,8 @@ class PetController {
 	}
 
 	/**
-	 * Populates the {@code types} model attribute with all available pet types for
-	 * use in
+	 * Populates the {@code types} model attribute with all available pet types for use in
 	 * the form dropdown.
-	 * 
 	 * @return collection of all {@link PetType} records
 	 */
 	@ModelAttribute("types")
@@ -108,9 +99,7 @@ class PetController {
 	}
 
 	/**
-	 * Loads the {@link Owner} for the current request before each handler method
-	 * runs.
-	 * 
+	 * Loads the {@link Owner} for the current request before each handler method runs.
 	 * @param ownerId the owner's database id from the URL path variable
 	 * @return the matching {@link Owner}
 	 * @throws IllegalArgumentException if no owner with {@code ownerId} exists
@@ -124,15 +113,12 @@ class PetController {
 	 * Resolves the {@link Pet} model attribute before each handler method runs.
 	 *
 	 * <p>
-	 * Returns a new, empty {@link Pet} when no {@code petId} path variable is
-	 * present
-	 * (the creation flow). When {@code petId} is provided (the edit flow), the pet
-	 * is
+	 * Returns a new, empty {@link Pet} when no {@code petId} path variable is present
+	 * (the creation flow). When {@code petId} is provided (the edit flow), the pet is
 	 * looked up on the owner.
 	 * </p>
-	 * 
 	 * @param ownerId the owner's database id from the URL path variable
-	 * @param petId   the pet's database id, or {@code null} on the creation flow
+	 * @param petId the pet's database id, or {@code null} on the creation flow
 	 * @return an existing {@link Pet} or a fresh instance
 	 * @throws IllegalArgumentException if the owner is not found
 	 */
@@ -155,10 +141,8 @@ class PetController {
 	}
 
 	/**
-	 * Prevents client-supplied {@code id} values from being bound to the owner
-	 * model
+	 * Prevents client-supplied {@code id} values from being bound to the owner model
 	 * object.
-	 * 
 	 * @param dataBinder the data binder for the {@code owner} model attribute
 	 */
 	@InitBinder("owner")
@@ -167,10 +151,8 @@ class PetController {
 	}
 
 	/**
-	 * Registers {@link PetValidator} as the validator for {@link Pet} form
-	 * submissions
+	 * Registers {@link PetValidator} as the validator for {@link Pet} form submissions
 	 * and prevents client-supplied {@code id} values from being bound.
-	 * 
 	 * @param dataBinder the data binder for the {@code pet} model attribute
 	 */
 	@InitBinder("pet")
@@ -180,12 +162,9 @@ class PetController {
 	}
 
 	/**
-	 * Renders the blank pet creation form, adding a transient {@link Pet} to the
-	 * owner
+	 * Renders the blank pet creation form, adding a transient {@link Pet} to the owner
 	 * for form binding.
-	 * 
 	 * @param owner the owner to whom the new pet will belong
-	 * @param model the model map (provided by Spring MVC)
 	 * @return view name for the create/update pet form
 	 */
 	@GetMapping("/pets/new")
@@ -199,17 +178,13 @@ class PetController {
 	 * Validates and persists a new pet for the given owner.
 	 *
 	 * <p>
-	 * Rejects the submission if the pet's name duplicates an existing saved pet on
-	 * this
-	 * owner, or if the birth date is in the future. On success, saves the owner
-	 * (which
+	 * Rejects the submission if the pet's name duplicates an existing saved pet on this
+	 * owner, or if the birth date is in the future. On success, saves the owner (which
 	 * cascades to the new pet) and redirects to the owner's detail page.
 	 * </p>
-	 * 
-	 * @param owner              the owner to whom the new pet will be added
-	 * @param pet                the form-bound pet to create; validated by
-	 *                           {@link PetValidator}
-	 * @param result             binding and validation errors
+	 * @param owner the owner to whom the new pet will be added
+	 * @param pet the form-bound pet to create; validated by {@link PetValidator}
+	 * @param result binding and validation errors
 	 * @param redirectAttributes flash attributes for the redirect response
 	 * @return redirect to the owner's detail page, or the form view on error
 	 */
@@ -221,10 +196,7 @@ class PetController {
 			result.rejectValue("name", "duplicate", "already exists");
 		}
 
-		LocalDate currentDate = LocalDate.now();
-		if (pet.getBirthDate() != null && pet.getBirthDate().isAfter(currentDate)) {
-			result.rejectValue("birthDate", "typeMismatch.birthDate");
-		}
+		rejectFutureBirthDate(pet, result);
 
 		if (result.hasErrors()) {
 			return VIEWS_PETS_CREATE_OR_UPDATE_FORM;
@@ -238,7 +210,6 @@ class PetController {
 
 	/**
 	 * Renders the pet edit form for an existing pet.
-	 * 
 	 * @return view name for the create/update pet form
 	 */
 	@GetMapping("/pets/{petId}/edit")
@@ -250,18 +221,14 @@ class PetController {
 	 * Validates and persists updates to an existing pet.
 	 *
 	 * <p>
-	 * Rejects the submission if the new name duplicates another pet already
-	 * belonging to
-	 * this owner (excluding the pet being edited), or if the birth date is in the
-	 * future.
+	 * Rejects the submission if the new name duplicates another pet already belonging to
+	 * this owner (excluding the pet being edited), or if the birth date is in the future.
 	 * Delegates the actual field update and save to {@link #updatePetDetails}.
 	 * </p>
-	 * 
-	 * @param owner              the owner of the pet being edited
-	 * @param pet                the form-bound pet with updated values; validated
-	 *                           by
-	 *                           {@link PetValidator}
-	 * @param result             binding and validation errors
+	 * @param owner the owner of the pet being edited
+	 * @param pet the form-bound pet with updated values; validated by
+	 * {@link PetValidator}
+	 * @param result binding and validation errors
 	 * @param redirectAttributes flash attributes for the redirect response
 	 * @return redirect to the owner's detail page, or the form view on error
 	 */
@@ -272,17 +239,12 @@ class PetController {
 		String petName = pet.getName();
 
 		// checking if the pet name already exists for the owner
-		if (StringUtils.hasText(petName)) {
-			Pet existingPet = owner.getPet(petName, false);
-			if (existingPet != null && !Objects.equals(existingPet.getId(), pet.getId())) {
-				result.rejectValue("name", "duplicate", "already exists");
-			}
+		Pet existingPet = owner.getPet(petName, false);
+		if (StringUtils.hasText(petName) && existingPet != null && !Objects.equals(existingPet.getId(), pet.getId())) {
+			result.rejectValue("name", "duplicate", "already exists");
 		}
 
-		LocalDate currentDate = LocalDate.now();
-		if (pet.getBirthDate() != null && pet.getBirthDate().isAfter(currentDate)) {
-			result.rejectValue("birthDate", "typeMismatch.birthDate");
-		}
+		rejectFutureBirthDate(pet, result);
 
 		if (result.hasErrors()) {
 			return VIEWS_PETS_CREATE_OR_UPDATE_FORM;
@@ -294,12 +256,10 @@ class PetController {
 	}
 
 	/**
-	 * Updates the fields of the existing pet in-place, or adds the pet to the owner
-	 * if no
+	 * Updates the fields of the existing pet in-place, or adds the pet to the owner if no
 	 * matching id is found, then saves the owner aggregate.
-	 * 
 	 * @param owner the owner of the pet
-	 * @param pet   the pet carrying the updated field values
+	 * @param pet the pet carrying the updated field values
 	 * @throws IllegalStateException if {@code pet.getId()} is {@code null}
 	 */
 	private void updatePetDetails(Owner owner, Pet pet) {
@@ -311,10 +271,18 @@ class PetController {
 			existingPet.setName(pet.getName());
 			existingPet.setBirthDate(pet.getBirthDate());
 			existingPet.setType(pet.getType());
-		} else {
+		}
+		else {
 			owner.addPet(pet);
 		}
 		this.owners.save(owner);
+	}
+
+	private void rejectFutureBirthDate(Pet pet, BindingResult result) {
+		LocalDate currentDate = LocalDate.now();
+		if (pet.getBirthDate() != null && pet.getBirthDate().isAfter(currentDate)) {
+			result.rejectValue("birthDate", "typeMismatch.birthDate");
+		}
 	}
 
 }
